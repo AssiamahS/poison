@@ -3,7 +3,8 @@ SRC       := skill
 
 .PHONY: install uninstall check info dry-run
 
-install:
+install: 
+	mkdir -p $(HOME)/.local/bin && cp bin/poison $(HOME)/.local/bin/poison && chmod +x $(HOME)/.local/bin/poison
 	mkdir -p $(SKILL_DIR)
 	cp -R $(SRC)/. $(SKILL_DIR)/
 	chmod +x $(SKILL_DIR)/scripts/poison_gen.py

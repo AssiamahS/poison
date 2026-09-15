@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# terminal wrapper: runs the /poison skill through a one-shot claude session.
+# usage: poison [--style S] [--draw-level L] ... <content>
+set -euo pipefail
+if [ $# -eq 0 ]; then
+  echo "usage: poison [--style whiteboard|infographic|presentation|diagram|mindmap|mindmap-structured|mockup] [flags] <content>" >&2
+  exit 2
+fi
+command -v claude >/dev/null || { echo "poison: claude CLI not found (npm i -g @anthropic-ai/claude-code)" >&2; exit 2; }
+exec claude -p --permission-mode acceptEdits "/poison $*"

@@ -25,7 +25,11 @@ templates.
 |---|---|
 | <img src="examples/whiteboard-dns-1.png" width="560" alt="whiteboard"> | <img src="examples/infographic-ml-1.png" width="300" alt="infographic"> |
 
-Both rendered with the default OpenRouter backend at about four cents each.
+| Mind map: The principles of object-oriented programming (run from the terminal with `poison --style mindmap ...`) |
+|---|
+| <img src="examples/mindmap-oop-1.png" width="560" alt="mindmap"> |
+
+All rendered with the default OpenRouter backend at about four cents each.
 
 ## Backends
 
@@ -44,7 +48,7 @@ model the backend accepts with `--model`, for example
 ```bash
 git clone https://github.com/AssiamahS/poison.git
 cd poison
-make install        # copies skill/ to ~/.claude/skills/poison
+make install        # copies skill/ to ~/.claude/skills/poison and bin/poison to ~/.local/bin
 make check          # verifies python3, files, and that an API key is visible
 ```
 
@@ -56,6 +60,14 @@ export OPENROUTER_API_KEY="sk-or-..."   # openrouter.ai/keys
 
 The skill is available as `/poison` in every Claude Code session immediately. The only
 runtime dependency is `python3`; the generator uses the standard library.
+
+`/poison` is a slash command, so it only works inside a `claude` session. From a plain
+shell use the wrapper, which runs the same skill through a one-shot session and drops the
+PNG in the current directory:
+
+```bash
+poison --style mindmap The principles of object-oriented programming
+```
 
 ## Usage
 
@@ -108,6 +120,7 @@ skill/
   SKILL.md                 the pipeline Claude follows: parse flags, read Mermaid, analyze, build prompt, generate, report
   styles/<style>.md        one prompt template per style, read on demand
   scripts/poison_gen.py    backend script: prompt file in, PNG out, prints a JSON line with path and cost
+bin/poison                 shell wrapper: claude -p "/poison ..."
 examples/                  rendered samples
 Makefile                   install / uninstall / check / info
 ```

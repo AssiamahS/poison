@@ -90,6 +90,7 @@ def gen_openrouter(prompt, model, ratio, key):
         {"model": model,
          "messages": [{"role": "user", "content": prompt}],
          "modalities": ["image", "text"],
+         "max_tokens": 2048,  # one image is ~1290 output tokens; a low cap keeps the credit reservation small
          "image_config": {"aspect_ratio": ratio}},
     )
     if "error" in d:
