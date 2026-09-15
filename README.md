@@ -14,10 +14,13 @@ rendered in any style.
 
 The image model is not the product. The skill first analyzes the content (core idea,
 sub-topics, relationships, a visual metaphor per concept, a layout strategy, a color per
-section), then writes a 400-800 word prompt from a style template that spells out every
-position, icon, label, connector, color and typeface. That prompt is what produces images on
-par with the visual summaries in NotebookLM or Gemini, from your own terminal, with your own
-templates.
+section) and turns it into a spatial spec from a style template: every position, icon, label,
+connector, color and typeface.
+
+By default Claude then draws that spec itself as SVG and the script rasterizes it locally.
+No image API, no per-image cost, no misspelled labels, and you keep an editable SVG. If you
+want a painterly or photographic look instead, pass `--backend openrouter|openai|gemini` and
+the same spec becomes a 400-800 word prompt for an image model.
 
 ## Examples
 
@@ -25,23 +28,29 @@ templates.
 |---|---|
 | <img src="examples/whiteboard-dns-1.png" width="560" alt="whiteboard"> | <img src="examples/infographic-ml-1.png" width="300" alt="infographic"> |
 
-| Mind map: The principles of object-oriented programming (run from the terminal with `poison --style mindmap ...`) |
+| Mind map, default `claude` backend: Claude wrote the SVG, rendered locally, $0 |
 |---|
-| <img src="examples/mindmap-oop-1.png" width="560" alt="mindmap"> |
+| <img src="examples/mindmap-oop-svg-1.png" width="700" alt="mindmap svg"> |
 
-All rendered with the default OpenRouter backend at about four cents each.
+| Same topic through `--backend openrouter` (about four cents, note the typos the image model adds) |
+|---|
+| <img src="examples/mindmap-oop-1.png" width="560" alt="mindmap openrouter"> |
+
+The whiteboard and infographic above were rendered through OpenRouter.
 
 ## Backends
 
 | Backend | Env var | Default model | Cost per image | Notes |
 |---|---|---|---|---|
-| `openrouter` | `OPENROUTER_API_KEY` | `google/gemini-2.5-flash-image` | ~$0.04 | default when present; honors aspect ratio; occasional typos in small text |
+| `claude` | none | the Claude session draws SVG, rasterized by rsvg-convert / Chromium / qlmanage | $0 | default; crisp text, editable SVG kept, clean-illustration look |
+| `openrouter` | `OPENROUTER_API_KEY` | `google/gemini-2.5-flash-image` | ~$0.04 | honors aspect ratio; occasional typos in small text |
 | `openai` | `OPENAI_API_KEY` | `gpt-image-1.5` | $0.19-0.29 | exact pixel sizes, best text rendering |
 | `gemini` | `GEMINI_API_KEY` | `gemini-2.5-flash-image` | free tier | direct Google API |
 
-Auto-detection order is OpenRouter, OpenAI, Gemini. Force one with `--backend`, or pick any
-model the backend accepts with `--model`, for example
-`--backend openrouter --model google/gemini-3-pro-image` when small text must be perfect.
+`claude` needs a local SVG renderer: `brew install librsvg` gives `rsvg-convert`; a
+Playwright or Google Chrome install, or macOS `qlmanage`, work as fallbacks. For the API
+backends pick any model the backend accepts with `--model`, for example
+`--backend openrouter --model google/gemini-3-pro-image`.
 
 ## Install
 
@@ -52,14 +61,15 @@ make install        # copies skill/ to ~/.claude/skills/poison and bin/poison to
 make check          # verifies python3, files, and that an API key is visible
 ```
 
-Set at least one key in your shell profile:
+The default backend needs no key. For the image-model backends set one in your shell profile:
 
 ```bash
 export OPENROUTER_API_KEY="sk-or-..."   # openrouter.ai/keys
 ```
 
-The skill is available as `/poison` in every Claude Code session immediately. The only
-runtime dependency is `python3`; the generator uses the standard library.
+The skill is available as `/poison` in every Claude Code session immediately. Runtime
+dependencies are `python3` and, for the default backend, one SVG renderer
+(`brew install librsvg`).
 
 `/poison` is a slash command, so it only works inside a `claude` session. From a plain
 shell use the wrapper, which runs the same skill through a one-shot session and drops the
@@ -107,7 +117,7 @@ Read notes/retro.md and /poison --draw-level sketch a whiteboard of the takeaway
 | `--device` | `mobile` `tablet` `desktop` (mockup only) | `mobile` |
 | `--mode` | `single` `multi-frame` | `single` |
 | `--from` | `mermaid` `mermaid-file PATH` | none |
-| `--backend` | `openrouter` `openai` `gemini` | auto |
+| `--backend` | `claude` `openrouter` `openai` `gemini` | `claude` |
 | `--model` | any model id for the backend | backend default |
 | `--size` | `1024x1024` `1536x1024` `1024x1536` or a ratio like `16:9` | by style |
 | `--output` | directory | `./` |
@@ -118,8 +128,9 @@ Read notes/retro.md and /poison --draw-level sketch a whiteboard of the takeaway
 ```
 skill/
   SKILL.md                 the pipeline Claude follows: parse flags, read Mermaid, analyze, build prompt, generate, report
-  styles/<style>.md        one prompt template per style, read on demand
-  scripts/poison_gen.py    backend script: prompt file in, PNG out, prints a JSON line with path and cost
+  styles/<style>.md        one spec template per style, read on demand
+  styles/svg-guide.md      how Claude draws the spec as SVG: fonts, rough filter, connectors, icons, text rules
+  scripts/poison_gen.py    backend script: SVG or prompt file in, PNG out, prints a JSON line with path and cost
 bin/poison                 shell wrapper: claude -p "/poison ..."
 examples/                  rendered samples
 Makefile                   install / uninstall / check / info
@@ -128,7 +139,9 @@ Makefile                   install / uninstall / check / info
 The generator can be used on its own:
 
 ```bash
-python3 skill/scripts/poison_gen.py --prompt-file prompt.txt --size 1536x1024 --out ./out --prefix demo
+python3 skill/scripts/poison_gen.py --svg-file drawing.svg --size 1536x1024 --out ./out --prefix demo
+# {"path": "./out/demo-1.png", "svg": "drawing.svg", "backend": "claude", "model": "svg via rsvg-convert", "size": "1536x1024", "cost": 0}
+python3 skill/scripts/poison_gen.py --backend openrouter --prompt-file prompt.txt --size 1536x1024 --out ./out --prefix demo
 # {"path": "./out/demo-1.png", "backend": "openrouter", "model": "google/gemini-2.5-flash-image", "size": "1536x1024", "cost": 0.0389}
 ```
 
@@ -136,6 +149,7 @@ python3 skill/scripts/poison_gen.py --prompt-file prompt.txt --size 1536x1024 --
 
 Shape of the idea and the style list come from Eric Blue's
 [visual-explainer-skill](https://github.com/ericblue/visual-explainer-skill) (MIT). Templates,
-pipeline and generator here are written from scratch, with OpenRouter as the default backend.
+pipeline and generator here are written from scratch, with a free SVG-drawing backend as the
+default and OpenRouter, OpenAI and Gemini as paid options.
 
 MIT.

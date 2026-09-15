@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
-"""poison image backend — one prompt in, one PNG out.
+"""poison image backend — one prompt (or one SVG) in, one PNG out.
 
-Backends (auto-detected from env, or forced with --backend):
-  openrouter  OPENROUTER_API_KEY  google/gemini-2.5-flash-image (default, ~$0.04/img)
+Backends:
+  claude      no key, $0     Claude writes the SVG in-session, this script rasterizes it
+                             locally (rsvg-convert > headless Chromium > qlmanage)
+  openrouter  OPENROUTER_API_KEY  google/gemini-2.5-flash-image (~$0.04/img)
   openai      OPENAI_API_KEY      gpt-image-1.5 (~$0.19-0.29/img)
   gemini      GEMINI_API_KEY      gemini-2.5-flash-image (direct, free tier)
 
 Usage:
-  poison_gen.py --prompt-file p.txt --size 1536x1024 --out ./ --prefix poison --index 1
-  cat p.txt | poison_gen.py --size 1024x1024
+  poison_gen.py --svg-file poison-1.svg --out ./ --prefix poison --index 1       # claude backend
+  poison_gen.py --prompt-file p.txt --size 1536x1024 --out ./ --prefix poison     # API backends
+  cat p.txt | poison_gen.py --backend openrouter --size 1024x1024
 
 Prints one JSON line on success: {"path", "backend", "model", "size", "cost"}.
 Exit 2 = config problem (no key / bad args), exit 1 = API failure.
 """
 import argparse
 import base64
+import glob
 import json
 import os
+import shutil
+import subprocess
 import sys
 import time
 import urllib.error
@@ -41,7 +47,40 @@ def env_key(name):
     return v if v and v.lower() not in ("none", "null", "unset") else ""
 
 
-def detect_backend(forced):
+def find_renderer():
+    """First available local SVG rasterizer, as (name, path)."""
+    if shutil.which("rsvg-convert"):
+        return "rsvg-convert", shutil.which("rsvg-convert")
+    chrome_candidates = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        shutil.which("chromium") or "", shutil.which("google-chrome") or "",
+    ]
+    for pat in ("chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell",
+                "chromium_headless_shell-*/chrome-*/headless_shell",
+                "chromium-*/chrome-mac*/Chromium.app/Contents/MacOS/Chromium",
+                "chromium-*/chrome-linux*/chrome"):
+        chrome_candidates += sorted(glob.glob(os.path.expanduser("~/Library/Caches/ms-playwright/" + pat)), reverse=True)
+        chrome_candidates += sorted(glob.glob(os.path.expanduser("~/.cache/ms-playwright/" + pat)), reverse=True)
+    for c in chrome_candidates:
+        if c and os.path.exists(c):
+            return "chromium", c
+    if shutil.which("qlmanage"):
+        return "qlmanage", shutil.which("qlmanage")
+    return None, None
+
+
+def detect_backend(forced, svg_file):
+    if svg_file and not forced:
+        forced = "claude"
+    if forced == "claude":
+        if not svg_file:
+            die(2, "--backend claude needs --svg-file (Claude writes the SVG, this script rasterizes it)")
+        if not find_renderer()[0]:
+            die(2, "no SVG renderer found. Install one:\n"
+                   "  brew install librsvg            # rsvg-convert (recommended)\n"
+                   "  or have Chrome / Playwright Chromium / macOS qlmanage available")
+        return "claude"
     if forced:
         if not env_key(KEY_ENV[forced]):
             die(2, f"--backend {forced} needs {KEY_ENV[forced]} in the environment")
@@ -49,10 +88,43 @@ def detect_backend(forced):
     for b in ("openrouter", "openai", "gemini"):
         if env_key(KEY_ENV[b]):
             return b
-    die(2, "no image API key found. Set one of:\n"
-           "  export OPENROUTER_API_KEY=...   # openrouter.ai/keys (default, cheapest)\n"
+    die(2, "no image API key found and no --svg-file given. Either:\n"
+           "  use the free claude backend: write an SVG and pass --svg-file FILE\n"
+           "  export OPENROUTER_API_KEY=...   # openrouter.ai/keys (~$0.04/img)\n"
            "  export OPENAI_API_KEY=sk-...    # platform.openai.com/api-keys\n"
            "  export GEMINI_API_KEY=AIza...   # aistudio.google.com/apikey")
+
+
+def render_svg(svg_path, png_path, width):
+    name, exe = find_renderer()
+    if name == "rsvg-convert":
+        subprocess.run([exe, "-w", str(width), "-b", "white", "-o", png_path, svg_path], check=True)
+    elif name == "chromium":
+        w, h = svg_dimensions(svg_path, width)
+        subprocess.run([exe, "--headless", "--disable-gpu", "--hide-scrollbars", "--no-sandbox",
+                        f"--window-size={w},{h}", f"--screenshot={png_path}",
+                        "file://" + os.path.abspath(svg_path)],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    elif name == "qlmanage":
+        outdir = os.path.dirname(os.path.abspath(png_path)) or "."
+        subprocess.run([exe, "-t", "-s", str(width), "-o", outdir, svg_path],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        produced = os.path.join(outdir, os.path.basename(svg_path) + ".png")
+        os.replace(produced, png_path)
+    else:
+        die(2, "no SVG renderer found")
+    return name
+
+
+def svg_dimensions(svg_path, width):
+    """Width/height in px from the viewBox, scaled so width matches; falls back to 3:2."""
+    import re
+    head = open(svg_path, encoding="utf-8", errors="replace").read(4000)
+    m = re.search(r'viewBox="\s*[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)', head)
+    if m:
+        vw, vh = float(m.group(1)), float(m.group(2))
+        return width, int(round(width * vh / vw))
+    return width, int(round(width * 2 / 3))
 
 
 def die(code, msg):
@@ -137,8 +209,9 @@ def gen_gemini(prompt, model, ratio, key):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--prompt-file", help="file holding the prompt (default: stdin)")
-    ap.add_argument("--backend", choices=list(DEFAULT_MODEL))
+    ap.add_argument("--prompt-file", help="file holding the prompt (default: stdin) — API backends")
+    ap.add_argument("--svg-file", help="SVG written by Claude — selects the free local claude backend")
+    ap.add_argument("--backend", choices=["claude"] + list(DEFAULT_MODEL))
     ap.add_argument("--model", help="override the backend's default model")
     ap.add_argument("--size", default="1536x1024",
                     help="1024x1024 | 1536x1024 | 1024x1536 | or an aspect ratio like 16:9")
@@ -155,13 +228,27 @@ def main():
     else:
         die(2, f"bad --size {a.size!r}; use {', '.join(SIZES)} or a ratio like 16:9")
 
-    backend = detect_backend(a.backend)
-    model = a.model or DEFAULT_MODEL[backend]
+    backend = detect_backend(a.backend, a.svg_file)
+    if backend == "claude":
+        model = "svg via " + find_renderer()[0]
+    else:
+        model = a.model or DEFAULT_MODEL[backend]
     if backend == "openai" and size not in SIZES:
         die(2, "openai only accepts 1024x1024, 1536x1024 or 1024x1536")
 
     if a.dry_run:
         print(json.dumps({"backend": backend, "model": model, "size": size, "ratio": ratio}))
+        return
+
+    if backend == "claude":
+        if not os.path.exists(a.svg_file):
+            die(2, f"svg file not found: {a.svg_file}")
+        os.makedirs(a.out, exist_ok=True)
+        path = os.path.join(a.out, f"{a.prefix}-{a.index}.png")
+        width = int(size.split("x")[0]) if "x" in size else 1536
+        renderer = render_svg(a.svg_file, path, width)
+        print(json.dumps({"path": path, "svg": a.svg_file, "backend": "claude",
+                          "model": "svg via " + renderer, "size": size, "cost": 0}))
         return
 
     prompt = open(a.prompt_file).read() if a.prompt_file else sys.stdin.read()

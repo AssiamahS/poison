@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" font-family="'Marker Felt', 'Chalkboard SE', 'Comic Sans MS', cursive">
+  <defs>
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B7280"/>
+    </marker>
+  </defs>
+  <rect width="1536" height="1024" fill="#FBF7EE"/>
+
+  <!-- branches: center (768,512), 6 spokes from -90 deg clockwise -->
+  <g fill="none" stroke-linecap="round" filter="url(#rough)">
+    <path d="M768,512 Q790,300 812,180" stroke="#E07A5F" stroke-width="10"/>
+    <path d="M768,512 Q1000,420 1130,330" stroke="#2A9D8F" stroke-width="10"/>
+    <path d="M768,512 Q1000,620 1120,720" stroke="#E9A23B" stroke-width="10"/>
+    <path d="M768,512 Q760,720 740,860" stroke="#8E5BD6" stroke-width="10"/>
+    <path d="M768,512 Q540,630 400,720" stroke="#5CB85C" stroke-width="10"/>
+    <path d="M768,512 Q540,400 420,300" stroke="#3B82F6" stroke-width="10"/>
+  </g>
+
+  <!-- center cloud -->
+  <g filter="url(#rough)">
+    <ellipse cx="768" cy="512" rx="190" ry="118" fill="#FFF6C8" stroke="#2B2B2B" stroke-width="6"/>
+  </g>
+  <text x="768" y="492" font-size="44" text-anchor="middle" fill="#2B2B2B" font-weight="bold">Object-Oriented</text>
+  <text x="768" y="542" font-size="44" text-anchor="middle" fill="#2B2B2B" font-weight="bold">Programming</text>
+  <text x="768" y="582" font-size="19" text-anchor="middle" fill="#555" font-family="'Chalkboard SE', cursive">objects bundle data and behavior</text>
+  <!-- lightbulb doodle -->
+  <circle cx="930" cy="410" r="14" fill="#FFD84D" stroke="#2B2B2B" stroke-width="3"/>
+  <rect x="923" y="423" width="14" height="9" fill="#2B2B2B"/>
+  <g stroke="#E9A23B" stroke-width="3" stroke-linecap="round"><line x1="930" y1="386" x2="930" y2="378"/><line x1="950" y1="395" x2="957" y2="389"/><line x1="910" y1="395" x2="903" y2="389"/></g>
+
+  <!-- 1 Encapsulation (top) -->
+  <text x="812" y="150" font-size="36" text-anchor="middle" fill="#E07A5F" font-weight="bold">Encapsulation</text>
+  <g transform="translate(700,60)">
+    <rect x="0" y="14" width="64" height="30" rx="15" fill="#E07A5F" stroke="#A3452F" stroke-width="3"/>
+    <rect x="32" y="14" width="32" height="30" rx="15" fill="#F5C6B8" stroke="#A3452F" stroke-width="3"/>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="850" y="82">hide internal state</text>
+    <text x="850" y="108">private fields, public methods</text>
+  </g>
+
+  <!-- 2 Abstraction (upper right) -->
+  <text x="1230" y="300" font-size="36" text-anchor="middle" fill="#2A9D8F" font-weight="bold">Abstraction</text>
+  <g transform="translate(1110,320)">
+    <rect x="0" y="0" width="40" height="90" rx="10" fill="#2A9D8F" stroke="#1B6B62" stroke-width="3"/>
+    <circle cx="20" cy="20" r="7" fill="#FBF7EE"/><rect x="10" y="40" width="20" height="8" fill="#FBF7EE"/><rect x="10" y="56" width="20" height="8" fill="#FBF7EE"/>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="1170" y="345">show only essentials</text>
+    <text x="1170" y="371">interfaces, abstract classes</text>
+    <text x="1170" y="397">a remote hides the wires</text>
+  </g>
+
+  <!-- 3 Inheritance (lower right) -->
+  <text x="1220" y="700" font-size="36" text-anchor="middle" fill="#E9A23B" font-weight="bold">Inheritance</text>
+  <g font-size="19" fill="#3A3A3A" font-family="'Chalkboard SE', cursive" text-anchor="middle">
+    <g filter="url(#rough)" fill="none" stroke="#E9A23B" stroke-width="3">
+      <ellipse cx="1150" cy="760" rx="48" ry="20"/><ellipse cx="1090" cy="830" rx="40" ry="20"/><ellipse cx="1210" cy="830" rx="40" ry="20"/>
+      <path d="M1150,780 L1150,800 L1090,800 L1090,810 M1150,800 L1210,800 L1210,810"/>
+    </g>
+    <text x="1150" y="766">Animal</text><text x="1090" y="836">Dog</text><text x="1210" y="836">Cat</text>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="1280" y="760">reuse parent code</text>
+    <text x="1280" y="786">is-a relationship</text>
+    <text x="1280" y="812">override behavior</text>
+  </g>
+
+  <!-- 4 Polymorphism (bottom) -->
+  <text x="740" y="915" font-size="36" text-anchor="middle" fill="#8E5BD6" font-weight="bold">Polymorphism</text>
+  <g transform="translate(560,930)">
+    <circle cx="20" cy="30" r="18" fill="#8E5BD6"/><circle cx="52" cy="30" r="18" fill="#5CB85C"/><circle cx="84" cy="30" r="18" fill="#E9A23B"/>
+    <text x="52" y="72" font-size="16" text-anchor="middle" fill="#555" font-family="'Chalkboard SE', cursive">same call, many forms</text>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="790" y="950">one interface, many forms</text>
+    <text x="790" y="976">method overriding</text>
+    <text x="790" y="1002">dynamic dispatch</text>
+  </g>
+
+  <!-- 5 Classes and Objects (lower left) -->
+  <text x="300" y="700" font-size="36" text-anchor="middle" fill="#5CB85C" font-weight="bold">Classes &amp; Objects</text>
+  <g transform="translate(120,725)" stroke="#3C8C3C" stroke-width="3">
+    <polygon points="30,4 38,22 58,24 43,37 47,57 30,47 13,57 17,37 2,24 22,22" fill="none" stroke-dasharray="4 3"/>
+    <polygon points="90,4 98,22 118,24 103,37 107,57 90,47 73,57 77,37 62,24 82,22" fill="#5CB85C"/>
+    <polygon points="150,4 158,22 178,24 163,37 167,57 150,47 133,57 137,37 122,24 142,22" fill="#5CB85C"/>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="120" y="815">class = blueprint (cookie cutter)</text>
+    <text x="120" y="841">object = instance (the cookies)</text>
+    <text x="120" y="867">state + behavior</text>
+  </g>
+
+  <!-- 6 SOLID (upper left) -->
+  <text x="330" y="270" font-size="36" text-anchor="middle" fill="#3B82F6" font-weight="bold">SOLID Design</text>
+  <g transform="translate(120,300)" font-size="20" fill="#fff" text-anchor="middle" font-weight="bold">
+    <g stroke="#1E4FA8" stroke-width="3"><rect x="0" y="0" width="36" height="36" rx="6" fill="#3B82F6"/><rect x="42" y="0" width="36" height="36" rx="6" fill="#3B82F6"/><rect x="84" y="0" width="36" height="36" rx="6" fill="#3B82F6"/><rect x="126" y="0" width="36" height="36" rx="6" fill="#3B82F6"/><rect x="168" y="0" width="36" height="36" rx="6" fill="#3B82F6"/></g>
+    <text x="18" y="26">S</text><text x="60" y="26">O</text><text x="102" y="26">L</text><text x="144" y="26">I</text><text x="186" y="26">D</text>
+  </g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive">
+    <text x="120" y="375">single responsibility</text>
+    <text x="120" y="401">open / closed</text>
+    <text x="120" y="427">depend on abstractions</text>
+  </g>
+
+  <!-- cross links -->
+  <g fill="none" stroke="#6B7280" stroke-width="2.5" stroke-dasharray="8 8" marker-end="url(#arrow-gray)">
+    <path d="M880,890 Q1020,880 1120,840"/>
+    <path d="M1000,160 Q1120,190 1180,260"/>
+  </g>
+  <g font-size="17" fill="#6B7280" font-family="'Chalkboard SE', cursive" font-style="italic">
+    <text x="985" y="900">builds on</text>
+    <text x="1040" y="165">enforced by</text>
+  </g>
+
+  <!-- decorations -->
+  <g fill="#FFD84D" stroke="#C99A00" stroke-width="2">
+    <polygon points="1400,120 1406,136 1423,137 1410,148 1414,165 1400,156 1386,165 1390,148 1377,137 1394,136"/>
+    <polygon points="90,560 95,572 108,573 98,581 101,594 90,587 79,594 82,581 72,573 85,572"/>
+  </g>
+  <g stroke="#E07A5F" stroke-width="3" stroke-linecap="round"><line x1="1430" y1="900" x2="1430" y2="880"/><line x1="1420" y1="890" x2="1440" y2="890"/><line x1="1460" y1="930" x2="1460" y2="918"/><line x1="1454" y1="924" x2="1466" y2="924"/></g>
+</svg>

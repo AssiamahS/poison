@@ -7,9 +7,11 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 # poison
 
-One command, one picture. The image model is not the product; the prompt is. Every run
-spends most of its effort on analysis and on writing a 400-800 word, spatially explicit
-prompt from a style template, then hands that prompt to `scripts/poison_gen.py`.
+One command, one picture. The image model is not the product; the analysis and the
+spatial spec are. Every run spends most of its effort on analysis, then either draws the
+picture itself as SVG (default `claude` backend, no API, $0, runs on the session you are
+already paying for) or writes a 400-800 word prompt for an image model (`openrouter`,
+`openai`, `gemini`). `scripts/poison_gen.py` turns either into a PNG.
 
 ## Usage
 
@@ -39,7 +41,7 @@ with spaces, is the content.
 | `--device` | `mobile` | `mobile`, `tablet`, `desktop`; only for `--style mockup` |
 | `--mode` | `single` | `single` or `multi-frame` (3-5 images that build the idea up) |
 | `--from` | none | `mermaid` (content is Mermaid) or `mermaid-file PATH` |
-| `--backend` | auto | `openrouter`, `openai`, `gemini` |
+| `--backend` | `claude` | `claude` (SVG drawn in-session, free), `openrouter`, `openai`, `gemini` |
 | `--model` | backend default | any model id the backend accepts |
 | `--size` | by style | `1024x1024`, `1536x1024`, `1024x1536`, or a ratio such as `16:9` |
 | `--output` | `./` | directory for the PNGs |
@@ -55,14 +57,17 @@ The script lives next to this file. Locate it once:
 
 ```bash
 POISON_GEN="$(dirname "$(realpath ~/.claude/skills/poison/SKILL.md)")/scripts/poison_gen.py"
-python3 "$POISON_GEN" --dry-run --size <size> [--backend X] [--model Y]
+python3 "$POISON_GEN" --dry-run --size <size> --backend claude --svg-file x.svg   # default
+python3 "$POISON_GEN" --dry-run --size <size> --backend <openrouter|openai|gemini> [--model Y]
 ```
 
-The dry run prints the resolved backend, model and aspect ratio, or exits 2 with setup
-instructions when no key is present. Detection order is `OPENROUTER_API_KEY`, then
-`OPENAI_API_KEY`, then `GEMINI_API_KEY`. A key whose value is `none` counts as unset.
-Tell the user which backend was picked in one line, then keep going. If the script exits
-2, show its message and stop.
+The backend is `claude` unless the user passed `--backend`. With `claude` you draw the
+SVG yourself and the script rasterizes it locally (rsvg-convert, then headless Chromium,
+then macOS qlmanage); the dry run confirms a renderer exists. For the API backends the
+dry run prints the resolved model and aspect ratio, or exits 2 with setup instructions
+when the key is missing (a key whose value is `none` counts as unset). Tell the user which
+backend was picked in one line, then keep going. If the script exits 2, show its message
+and stop.
 
 If no content was given, ask what to visualize and stop.
 
@@ -104,7 +109,19 @@ Write this analysis out before touching a prompt. It is the step that decides qu
 
 Keep total on-image text modest. Image models render short labels well and paragraphs badly. Prefer 2-6 words per label, under about 60 words of visible text for `simple`, about 120 for `detailed`.
 
-## Step 4: Build the prompt from the style template
+## Step 4a (claude backend): Draw the SVG from the style template
+
+Read `styles/<style>.md` and `styles/svg-guide.md` (both relative to this file). The
+style template is your spec: realize every paragraph of it in SVG. Canvas and background
+from CANVAS, the title from TITLE, positions from LAYOUT, one group per SECTION with its
+icon drawn from primitives and its exact text, every CONNECTION as a path with an
+arrowhead and a label, DECORATIONS as small primitive doodles, the PALETTE as your only
+colors, TYPOGRAPHY via the font stacks in the guide, and the rough filter at the strength
+the draw level asks for. Break lines by hand, keep text inside its box, and read the whole
+file back for spelling before saving. Save as `<output>/<prefix>-<n>.svg`, then go to
+Step 6. Skip Step 4b.
+
+## Step 4b (API backends): Build the prompt from the style template
 
 Read `styles/<style>.md` (relative to this file) and fill it in from the analysis. The
 result must be 400-800 words and every bracketed placeholder must be replaced with
@@ -138,33 +155,43 @@ For `--mode multi-frame`, plan 3-5 frames before generating anything:
 - Middle frames add sub-topics in the order the relationship implies, keeping every earlier element in place.
 - The last frame is the complete picture with a one-line summary banner.
 
-Write a separate full prompt per frame. Each prompt repeats the same canvas, palette,
+With the `claude` backend, write frame 1 as a full SVG and produce each later frame by
+copying the previous file and adding groups, so earlier elements never move. With API
+backends, write a separate full prompt per frame that repeats the same canvas, palette,
 typography and layout paragraphs word for word, then states "This is frame N of M; the
-following elements are present:" followed by the cumulative list. Warn the user that
+following elements are present:" followed by the cumulative list, and warn the user that
 multi-frame costs one API call per frame.
 
 ## Step 6: Generate
 
-Write each prompt to a temp file (long prompts do not survive shell quoting), then call
-the script once per image:
+`claude` backend, one call per SVG:
+
+```bash
+python3 "$POISON_GEN" --svg-file <output>/<prefix>-<n>.svg --size <size> --out <output> --prefix <prefix> --index <n>
+```
+
+API backends: write each prompt to a temp file (long prompts do not survive shell
+quoting), then call the script once per image:
 
 ```bash
 PROMPT_FILE=$(mktemp -t poison-prompt)
 cat > "$PROMPT_FILE" <<'PROMPT'
 <the full prompt>
 PROMPT
-python3 "$POISON_GEN" --prompt-file "$PROMPT_FILE" --size <size> --out <output> --prefix <prefix> --index <n> [--backend X] [--model Y]
+python3 "$POISON_GEN" --prompt-file "$PROMPT_FILE" --size <size> --out <output> --prefix <prefix> --index <n> --backend <X> [--model Y]
 ```
 
 The script prints one JSON line with `path`, `backend`, `model`, `size` and `cost`
-(OpenRouter reports real cost; the others report null). Exit 1 means the API failed and
+(`claude` reports 0, OpenRouter reports real cost, the others report null). Exit 1 means the API failed and
 stderr has the reason. On failure report the error once, then suggest either a simpler
 `--complexity`, a shorter topic, or another `--backend`. Do not silently retry with a
 changed prompt.
 
 Read the generated PNG with the Read tool and check it against the analysis: title
-present, section count right, text legible. If a section is missing or text is garbled,
-say so in the summary rather than regenerating on your own; offer to regenerate.
+present, section count right, text legible, nothing overlapping or clipped. With the
+`claude` backend fix any layout defect in the SVG and re-render (it is free). With API
+backends, if a section is missing or text is garbled, say so in the summary rather than
+regenerating on your own; offer to regenerate.
 
 ## Step 7: Report
 
@@ -183,7 +210,7 @@ Style: <style> | Draw level: <level> | Complexity: <complexity> | Backend: <back
 - <A> -> <B>: <how>
 
 ### Files
-<path> (cost: $<n>)
+<png path> [and <svg path>] (cost: $<n>)
 ```
 
 Close with one or two concrete refinement suggestions that fit the content, such as
@@ -193,5 +220,6 @@ process.
 ## Notes
 
 - Text-heavy content reads best as `infographic`; processes as `diagram`; fun explanations as `whiteboard`; taxonomies as `mindmap` or `mindmap-structured`; screens as `mockup`.
-- OpenRouter default `google/gemini-2.5-flash-image` costs about $0.04 per image and honors aspect ratio. `google/gemini-3-pro-image` renders text more reliably at roughly 4x the price. OpenAI `gpt-image-1.5` costs $0.19-0.29 and honors exact pixel sizes.
+- `claude` is free, deterministic, always spells correctly and leaves an editable SVG next to the PNG; it looks like a clean illustration rather than a photo of a whiteboard. Use an API backend when the user wants painterly, photographic or textured output.
+- OpenRouter `google/gemini-2.5-flash-image` costs about $0.04 per image and honors aspect ratio. `google/gemini-3-pro-image` renders text more reliably at roughly 4x the price. OpenAI `gpt-image-1.5` costs $0.19-0.29 and honors exact pixel sizes.
 - Costs are per image; multi-frame multiplies them.
