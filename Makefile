@@ -6,8 +6,9 @@ SRC       := skill
 install: 
 	mkdir -p $(HOME)/.local/bin && cp bin/poison $(HOME)/.local/bin/poison && chmod +x $(HOME)/.local/bin/poison
 	mkdir -p $(SKILL_DIR)
-	cp -R $(SRC)/. $(SKILL_DIR)/
-	chmod +x $(SKILL_DIR)/scripts/poison_gen.py
+	rsync -a --delete --exclude node_modules --exclude 'public/job' $(SRC)/ $(SKILL_DIR)/
+	@if [ -d $(SRC)/video/node_modules ]; then ln -sfn $(CURDIR)/$(SRC)/video/node_modules $(SKILL_DIR)/video/node_modules; fi
+	chmod +x $(SKILL_DIR)/scripts/poison_gen.py $(SKILL_DIR)/scripts/poison_video.py
 	@echo "installed to $(SKILL_DIR) — type /poison in Claude Code"
 
 uninstall:

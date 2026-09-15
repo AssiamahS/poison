@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" font-family="'Marker Felt', 'Chalkboard SE', 'Comic Sans MS', cursive">
+  <defs>
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/></marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6B7280"/></marker>
+  </defs>
+  <rect width="1536" height="1024" fill="#FFFFFF"/>
+  <rect x="14" y="14" width="1508" height="996" fill="none" stroke="#C9CDD3" stroke-width="10" rx="8"/>
+  <text x="768" y="110" font-size="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">How a CPU Executes an Instruction</text>
+  <path d="M470,130 Q768,148 1066,130" fill="none" stroke="#1D4ED8" stroke-width="5" stroke-linecap="round" filter="url(#rough)"/>
+  <!-- memory column on the far left, always present -->
+  <g filter="url(#rough)"><rect x="70" y="300" width="230" height="420" rx="14" fill="#F3F4F6" stroke="#374151" stroke-width="5"/></g>
+  <text x="185" y="345" font-size="30" text-anchor="middle" fill="#374151" font-weight="bold">Memory</text>
+  <g font-size="21" fill="#374151" font-family="Menlo, monospace" text-anchor="middle">
+    <rect x="95" y="370" width="180" height="40" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2"/><text x="185" y="397">ADD R1, R2</text>
+    <rect x="95" y="420" width="180" height="40" rx="6" fill="#fff" stroke="#9CA3AF" stroke-width="2"/><text x="185" y="447">LOAD R3, 8</text>
+    <rect x="95" y="470" width="180" height="40" rx="6" fill="#fff" stroke="#9CA3AF" stroke-width="2"/><text x="185" y="497">JMP 0x40</text>
+    <rect x="95" y="520" width="180" height="40" rx="6" fill="#fff" stroke="#9CA3AF" stroke-width="2"/><text x="185" y="547">...</text>
+  </g>
+  <text x="185" y="690" font-size="20" text-anchor="middle" fill="#6B7280" font-family="'Chalkboard SE', cursive">PC points here</text>
+  <path d="M100,660 L100,390" fill="none" stroke="#6B7280" stroke-width="2.5" stroke-dasharray="6 6" marker-end="url(#arrow-gray)"/>
+  <!-- 1 FETCH -->
+  <g filter="url(#rough)"><rect x="400" y="300" width="300" height="240" rx="18" fill="none" stroke="#DC2626" stroke-width="6"/></g>
+  <text x="550" y="350" font-size="36" text-anchor="middle" fill="#DC2626" font-weight="bold">1. Fetch</text>
+  <g transform="translate(470,380)"><rect x="0" y="12" width="70" height="46" rx="6" fill="#FEE2E2" stroke="#DC2626" stroke-width="3"/><path d="M0,12 L35,36 L70,12" fill="none" stroke="#DC2626" stroke-width="3"/><g stroke="#DC2626" stroke-width="3" stroke-linecap="round"><line x1="80" y1="20" x2="110" y2="20"/><line x1="80" y1="35" x2="120" y2="35"/><line x1="80" y1="50" x2="105" y2="50"/></g></g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive" text-anchor="middle"><text x="550" y="475">read the instruction at PC</text><text x="550" y="503">into the instruction register</text></g>
+  <path d="M300,420 Q350,400 400,420" fill="none" stroke="#2563EB" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-blue)" filter="url(#rough)"/>
+  <text x="350" y="395" font-size="19" text-anchor="middle" fill="#2563EB" font-family="'Chalkboard SE', cursive">bytes</text>
+  <!-- 2 DECODE -->
+  <g filter="url(#rough)"><rect x="800" y="300" width="300" height="240" rx="18" fill="none" stroke="#D97706" stroke-width="6"/></g>
+  <text x="950" y="350" font-size="36" text-anchor="middle" fill="#D97706" font-weight="bold">2. Decode</text>
+  <g transform="translate(880,375)"><rect x="0" y="0" width="140" height="44" rx="8" fill="#FEF3C7" stroke="#D97706" stroke-width="3"/><line x1="46" y1="0" x2="46" y2="44" stroke="#D97706" stroke-width="3"/><line x1="92" y1="0" x2="92" y2="44" stroke="#D97706" stroke-width="3"/><g font-size="15" fill="#92400E" font-family="Menlo, monospace" text-anchor="middle"><text x="23" y="28">ADD</text><text x="69" y="28">R1</text><text x="116" y="28">R2</text></g><path d="M20,52 L20,64 M70,52 L70,64 M116,52 L116,64" stroke="#D97706" stroke-width="2.5"/></g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive" text-anchor="middle"><text x="950" y="475">split into opcode + operands</text><text x="950" y="503">control unit picks the circuit</text></g>
+  <path d="M700,420 Q750,400 800,420" fill="none" stroke="#2563EB" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-blue)" filter="url(#rough)"/>
+  <text x="750" y="395" font-size="19" text-anchor="middle" fill="#2563EB" font-family="'Chalkboard SE', cursive">bits</text>
+  <!-- 3 EXECUTE -->
+  <g filter="url(#rough)"><rect x="1200" y="300" width="270" height="240" rx="18" fill="none" stroke="#16A34A" stroke-width="6"/></g>
+  <text x="1335" y="350" font-size="36" text-anchor="middle" fill="#16A34A" font-weight="bold">3. Execute</text>
+  <g transform="translate(1275,372)"><path d="M0,0 L120,0 L90,50 L30,50 Z" fill="#DCFCE7" stroke="#16A34A" stroke-width="3"/><text x="60" y="34" font-size="22" text-anchor="middle" fill="#166534" font-weight="bold">ALU</text><g stroke="#16A34A" stroke-width="3"><line x1="30" y1="-14" x2="30" y2="0"/><line x1="90" y1="-14" x2="90" y2="0"/><line x1="60" y1="50" x2="60" y2="66"/></g></g>
+  <g font-size="21" fill="#3A3A3A" font-family="'Chalkboard SE', cursive" text-anchor="middle"><text x="1335" y="475">ALU does the math</text><text x="1335" y="503">result goes to R1</text></g>
+  <path d="M1100,420 Q1150,400 1200,420" fill="none" stroke="#2563EB" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-blue)" filter="url(#rough)"/>
+  <text x="1150" y="395" font-size="19" text-anchor="middle" fill="#2563EB" font-family="'Chalkboard SE', cursive">signals</text>
+  <!-- registers + loop back -->
+  <g filter="url(#rough)"><rect x="620" y="640" width="300" height="130" rx="14" fill="#F0FDF4" stroke="#16A34A" stroke-width="4"/></g>
+  <text x="770" y="680" font-size="28" text-anchor="middle" fill="#166534" font-weight="bold">Registers</text>
+  <g font-size="19" fill="#166534" font-family="Menlo, monospace" text-anchor="middle"><text x="665" y="720">R1 = 7</text><text x="770" y="720">R2 = 5</text><text x="875" y="720">R3 = 8</text><text x="770" y="750">PC = PC + 1</text></g>
+  <path d="M1335,540 Q1335,705 920,705" fill="none" stroke="#16A34A" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-green)" filter="url(#rough)"/>
+  <text x="1190" y="640" font-size="19" fill="#16A34A" font-family="'Chalkboard SE', cursive">write back</text>
+  <path d="M620,705 Q185,760 185,720" fill="none" stroke="#6B7280" stroke-width="4" stroke-dasharray="10 8" stroke-linecap="round" marker-end="url(#arrow-gray)"/>
+  <text x="420" y="770" font-size="19" fill="#6B7280" font-family="'Chalkboard SE', cursive" text-anchor="middle">next instruction, billions of times a second</text>
+  <g filter="url(#rough)"><ellipse cx="768" cy="900" rx="330" ry="52" fill="#FFF6C8" stroke="#2B2B2B" stroke-width="4"/></g>
+  <text x="768" y="910" font-size="30" text-anchor="middle" fill="#2B2B2B" font-weight="bold">fetch, decode, execute, repeat</text>
+  <polygon points="1420,860 1428,884 1453,885 1433,900 1439,925 1420,911 1401,925 1407,900 1387,885 1412,884" fill="#FFD84D" stroke="#C99A00" stroke-width="2"/>
+</svg>

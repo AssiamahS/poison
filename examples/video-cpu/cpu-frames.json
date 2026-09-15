@@ -1,0 +1,17 @@
+[
+ {
+  "image": "cpu-1.svg",
+  "caption": "Fetch: read the next instruction from memory",
+  "narration": "First, the CPU fetches. It reads the instruction that the program counter points to and copies it into the instruction register."
+ },
+ {
+  "image": "cpu-2.svg",
+  "caption": "Decode: split it into opcode and operands",
+  "narration": "Next, it decodes. The bits are split into an operation and its operands, and the control unit picks the circuit that will do the work."
+ },
+ {
+  "image": "cpu-3.svg",
+  "caption": "Execute: the ALU does the work, then repeat",
+  "narration": "Finally, it executes. The arithmetic unit does the math, the result is written back to a register, the program counter moves on, and the cycle repeats billions of times a second."
+ }
+]

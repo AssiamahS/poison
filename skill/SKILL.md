@@ -24,6 +24,7 @@ already paying for) or writes a 400-800 word prompt for an image model (`openrou
 /poison --style presentation --draw-level polished Microservices architecture
 /poison --style mockup --device desktop An admin dashboard with sidebar, stat cards, table
 /poison --mode multi-frame The OAuth2 authorization code flow
+/poison --mode video --narrate How a CPU executes an instruction         # animated MP4, spoken
 /poison --style whiteboard --from mermaid-file docs/architecture.mmd
 /poison --backend openai --style infographic How vaccines train the immune system
 ```
@@ -39,7 +40,9 @@ with spaces, is the content.
 | `--draw-level` | `normal` | `sketch` (rough, playful), `normal`, `polished` (clean, professional) |
 | `--complexity` | `moderate` | `simple` (3-4 concepts), `moderate` (5-7), `detailed` (8-12) |
 | `--device` | `mobile` | `mobile`, `tablet`, `desktop`; only for `--style mockup` |
-| `--mode` | `single` | `single` or `multi-frame` (3-5 images that build the idea up) |
+| `--mode` | `single` | `single`, `multi-frame` (3-5 images that build the idea up), or `video` (multi-frame rendered into an animated MP4 with Remotion) |
+| `--narrate` | off | with `--mode video`: speak each frame's narration line with macOS `say` (free, offline) |
+| `--voice` | `Samantha` | `say` voice for `--narrate` |
 | `--from` | none | `mermaid` (content is Mermaid) or `mermaid-file PATH` |
 | `--backend` | `claude` | `claude` (SVG drawn in-session, free), `openrouter`, `openai`, `gemini` |
 | `--model` | backend default | any model id the backend accepts |
@@ -162,6 +165,42 @@ typography and layout paragraphs word for word, then states "This is frame N of 
 following elements are present:" followed by the cumulative list, and warn the user that
 multi-frame costs one API call per frame.
 
+## Step 5b: Video mode (Remotion)
+
+`--mode video` is multi-frame plus animation. Plan and draw the 3-5 cumulative frames
+exactly as in Step 5 with the `claude` backend (API backends work too, one call per
+frame). For each frame also write:
+
+- a caption of at most 12 words, shown in a pill over the bottom 110px of the frame, so keep that band of every frame free of content
+- a narration line of 1-2 spoken sentences when `--narrate` is on (plain words, no
+  symbols or code; `say` reads it aloud)
+
+Save the frames as `<output>/<prefix>-<n>.svg` (or PNG for API backends), then write
+`<output>/<prefix>-frames.json`:
+
+```json
+[
+  {"image": "<output>/<prefix>-1.svg", "caption": "The setup", "narration": "Three actors take part: the user, the app, and the auth server."},
+  {"image": "<output>/<prefix>-2.svg", "caption": "...", "narration": "..."}
+]
+```
+
+and render:
+
+```bash
+python3 "$(dirname "$POISON_GEN")/poison_video.py" --title "<Title>" --frames <output>/<prefix>-frames.json --out <output> --prefix <prefix> [--narrate] [--voice Samantha] [--seconds-per-frame 4]
+```
+
+The first run installs Remotion inside the skill's `video/` folder (a few hundred MB,
+needs Node 20+); say so before running it. The script reuses a Chromium already on disk
+(Chrome, Playwright) so Remotion does not download one. It prints a JSON line with the
+MP4 path and total seconds. Frame length follows the narration audio when narrated,
+otherwise `--seconds-per-frame`. A one-second title card opens the video.
+
+Check the result by reading a still or two: extract with
+`ffmpeg -y -ss 3 -i <mp4> -frames:v 1 <png>` when ffmpeg exists, otherwise trust the
+frame PNGs you already inspected.
+
 ## Step 6: Generate
 
 `claude` backend, one call per SVG:
@@ -210,7 +249,7 @@ Style: <style> | Draw level: <level> | Complexity: <complexity> | Backend: <back
 - <A> -> <B>: <how>
 
 ### Files
-<png path> [and <svg path>] (cost: $<n>)
+<png path> [and <svg path>] [and <mp4 path>, <n> s] (cost: $<n>)
 ```
 
 Close with one or two concrete refinement suggestions that fit the content, such as

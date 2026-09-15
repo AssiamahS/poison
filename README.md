@@ -9,8 +9,9 @@ Claude Code. One slash command, one picture.
 
 Seven styles: whiteboard, infographic, presentation, diagram, mindmap, mindmap-structured,
 mockup. Three fidelity levels, three complexity levels, a multi-frame mode that builds an idea
-up over 3-5 images, and Mermaid input so an existing flowchart or sequence diagram can be
-rendered in any style.
+up over 3-5 images, a video mode that animates those frames into a narrated MP4 with
+Remotion, and Mermaid input so an existing flowchart or sequence diagram can be rendered in
+any style.
 
 The image model is not the product. The skill first analyzes the content (core idea,
 sub-topics, relationships, a visual metaphor per concept, a layout strategy, a color per
@@ -95,6 +96,7 @@ poison --style mindmap The principles of object-oriented programming
 /poison --style mindmap-structured Project management methodologies
 /poison --style mockup --device desktop An admin dashboard with sidebar nav, stat cards and a data table
 /poison --mode multi-frame The OAuth2 authorization code flow
+/poison --mode video --narrate How a CPU executes an instruction
 /poison --style whiteboard --from mermaid-file docs/architecture.mmd
 /poison --output ./docs/images --prefix arch System architecture of the payments service
 ```
@@ -115,7 +117,9 @@ Read notes/retro.md and /poison --draw-level sketch a whiteboard of the takeaway
 | `--draw-level` | `sketch` `normal` `polished` | `normal` |
 | `--complexity` | `simple` (3-4) `moderate` (5-7) `detailed` (8-12 concepts) | `moderate` |
 | `--device` | `mobile` `tablet` `desktop` (mockup only) | `mobile` |
-| `--mode` | `single` `multi-frame` | `single` |
+| `--mode` | `single` `multi-frame` `video` | `single` |
+| `--narrate` | speak each video frame with macOS `say` | off |
+| `--voice` | any `say -v ?` voice | `Samantha` |
 | `--from` | `mermaid` `mermaid-file PATH` | none |
 | `--backend` | `claude` `openrouter` `openai` `gemini` | `claude` |
 | `--model` | any model id for the backend | backend default |
@@ -131,6 +135,8 @@ skill/
   styles/<style>.md        one spec template per style, read on demand
   styles/svg-guide.md      how Claude draws the spec as SVG: fonts, rough filter, connectors, icons, text rules
   scripts/poison_gen.py    backend script: SVG or prompt file in, PNG out, prints a JSON line with path and cost
+  scripts/poison_video.py  video mode: frames + captions (+ say narration) in, Remotion-rendered MP4 out
+  video/                   the Remotion composition (title card, fade + settle per frame, caption pill, audio)
 bin/poison                 shell wrapper: claude -p "/poison ..."
 examples/                  rendered samples
 Makefile                   install / uninstall / check / info
@@ -143,6 +149,28 @@ python3 skill/scripts/poison_gen.py --svg-file drawing.svg --size 1536x1024 --ou
 # {"path": "./out/demo-1.png", "svg": "drawing.svg", "backend": "claude", "model": "svg via rsvg-convert", "size": "1536x1024", "cost": 0}
 python3 skill/scripts/poison_gen.py --backend openrouter --prompt-file prompt.txt --size 1536x1024 --out ./out --prefix demo
 # {"path": "./out/demo-1.png", "backend": "openrouter", "model": "google/gemini-2.5-flash-image", "size": "1536x1024", "cost": 0.0389}
+```
+
+## Video mode
+
+`--mode video` draws the multi-frame sequence, then hands the frames to a small
+[Remotion](https://www.remotion.dev) composition in `skill/video/`: a one-second title card,
+each frame fading in with a gentle settle, a caption pill sliding up, and with `--narrate` a
+spoken line per frame generated offline by macOS `say`. Frame timing follows the narration.
+Output is H.264 MP4 at 30 fps in the style's aspect ratio.
+
+Example: [`examples/video-cpu/cpu.mp4`](examples/video-cpu/cpu.mp4), 31 seconds, three
+cumulative whiteboard frames, narrated, rendered for $0.
+
+<img src="examples/video-cpu/cpu-3.png" width="600" alt="final frame of the CPU explainer video">
+
+Requirements: Node 20+ (Remotion installs into `skill/video/node_modules` on first use) and a
+Chromium on disk (Google Chrome or a Playwright install; Remotion downloads one otherwise).
+Narration is macOS only.
+
+```bash
+# the driver on its own
+python3 skill/scripts/poison_video.py --title "How DNS works" --frames frames.json --out ./out --prefix dns --narrate
 ```
 
 ## Credits
